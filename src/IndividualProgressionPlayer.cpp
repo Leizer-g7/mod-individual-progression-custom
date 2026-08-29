@@ -25,6 +25,10 @@ public:
         if (!player || !player->IsInWorld())
             return;
 
+        // Global PhaseMgr is the sole progression authority.
+        // 66001..66018 only mirror the global ContentStage for SQL.
+        sIndividualProgression->SyncProgressionMarkers(player);
+
         if (!sIndividualProgression->isNormalAccount(player)) // bot or exluded account
         {
             if (sIndividualProgression->isBotAccount(player))

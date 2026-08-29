@@ -7,6 +7,12 @@
 #include "ReputationMgr.h"
 #include "PetDefines.h"
 
+#include "../../mod-phase-progression/src/PhaseMgr.h"
+
+#include "Log.h"
+#include "WorldSession.h"
+#include "WorldSessionMgr.h"
+
 IndividualProgression* IndividualProgression::instance()
 {
     static IndividualProgression instance;
@@ -16,16 +22,9 @@ IndividualProgression* IndividualProgression::instance()
 uint8 IndividualProgression::GetPlayerProgressionFromQuests(Player* player) const
 {
     if (!player || !player->IsInWorld())
-        return 0;
+        return PROGRESSION_START;
 
-    uint8 progressionLevel = 0;
-    for (uint8 i = PROGRESSION_MOLTEN_CORE; i <= PROGRESSION_WOTLK_TIER_5; ++i)
-    {
-        uint32 PROGRESSION_QUEST = 66000 + i;
-        if (player->GetQuestStatus(PROGRESSION_QUEST) == QUEST_STATUS_REWARDED)
-            progressionLevel = i;
-    }
-    return progressionLevel;
+    return sPhaseMgr.GetActiveContentStage();
 }
 
 bool IndividualProgression::hasPassedProgression(Player* player, ProgressionState state) const
@@ -33,10 +32,7 @@ bool IndividualProgression::hasPassedProgression(Player* player, ProgressionStat
     if (!enabled || !state || !player || !player->IsInWorld())
         return false;
 
-    if (progressionLimit && (state > progressionLimit))
-        return false;
-
-    return sIndividualProgression->GetPlayerProgressionFromQuests(player) >= state;
+    return sPhaseMgr.GetActiveContentStage() >= static_cast<uint8>(state);
 }
 
 bool IndividualProgression::isBeforeProgression(Player* player, ProgressionState state)
@@ -44,63 +40,74 @@ bool IndividualProgression::isBeforeProgression(Player* player, ProgressionState
     if (!state || !player || !player->IsInWorld())
         return false;
 
-    return sIndividualProgression->GetPlayerProgressionFromQuests(player) < state;
+    return sPhaseMgr.GetActiveContentStage() < static_cast<uint8>(state);
 }
 
-void IndividualProgression::UpdateProgressionState(Player* player, ProgressionState newState) const
+void IndividualProgression::SyncProgressionMarkers(Player* player) const
 {
-    if (!enabled || !newState || !player || !player->IsInWorld())
+    if (!enabled || !player || !player->IsInWorld())
         return;
 
-    if (progressionLimit && newState > progressionLimit)
-        return;
+    uint8 globalStage = sPhaseMgr.GetActiveContentStage();
 
-    uint8 currentState = GetPlayerProgressionFromQuests(player);
-    if (newState > currentState)
+    if (globalStage > PROGRESSION_WOTLK_TIER_5)
+        globalStage = PROGRESSION_WOTLK_TIER_5;
+
+    for (uint8 i = PROGRESSION_MOLTEN_CORE;
+         i <= PROGRESSION_WOTLK_TIER_5;
+         ++i)
     {
-        for (uint8 i = currentState; i <= newState; ++i)
+        uint32 progressionQuest = 66000 + i;
+        bool const shouldBeRewarded = i <= globalStage;
+        bool const isRewarded =
+            player->GetQuestStatus(progressionQuest) == QUEST_STATUS_REWARDED;
+
+        if (!shouldBeRewarded)
         {
-            uint32 PROGRESSION_QUEST = 66000 + i;
-            Quest const* quest = sObjectMgr->GetQuestTemplate(PROGRESSION_QUEST);
+            if (isRewarded)
+                player->RemoveRewardedQuest(progressionQuest);
 
-            if (!quest)
-                continue;
-
-            player->AddQuest(quest, nullptr);
-            player->CompleteQuest(PROGRESSION_QUEST);
-            player->RewardQuest(quest, 0, player, false, false);
+            continue;
         }
-    }
-}
 
-void IndividualProgression::ForceUpdateProgressionState(Player* player, ProgressionState newState)
-{
-    if (!player || !player->IsInWorld())
-        return;
+        if (isRewarded)
+            continue;
 
-    if (!newState && newState != 0)
-        return;
-
-    // remove all hidden progression quests first
-    for (uint8 i = PROGRESSION_MOLTEN_CORE; i <= PROGRESSION_WOTLK_TIER_5; ++i)
-    {
-        uint32 PROGRESSION_QUEST = 66000 + i;
-        if (player->GetQuestStatus(PROGRESSION_QUEST) == QUEST_STATUS_REWARDED)
-            player->RemoveRewardedQuest(PROGRESSION_QUEST);
-    }
-
-    for (uint8 i = PROGRESSION_MOLTEN_CORE; i <= newState; ++i)
-    {
-        uint32 PROGRESSION_QUEST = 66000 + i;
-        Quest const* quest = sObjectMgr->GetQuestTemplate(PROGRESSION_QUEST);
+        Quest const* quest =
+            sObjectMgr->GetQuestTemplate(progressionQuest);
 
         if (!quest)
             continue;
 
         player->AddQuest(quest, nullptr);
-        player->CompleteQuest(PROGRESSION_QUEST);
-        player->RewardQuest(quest, 0, player, false, false);
+        player->CompleteQuest(progressionQuest);
+        player->RewardQuest(
+            quest,
+            0,
+            player,
+            false,
+            false);
     }
+}
+
+void IndividualProgression::UpdateProgressionState(Player* player, ProgressionState newState) const
+{
+    (void)newState;
+
+    if (!enabled || !player || !player->IsInWorld())
+        return;
+
+    SyncProgressionMarkers(player);
+}
+
+void IndividualProgression::ForceUpdateProgressionState(Player* player, ProgressionState newState)
+{
+    (void)newState;
+
+    if (!player || !player->IsInWorld())
+        return;
+
+    sIndividualProgression->SyncProgressionMarkers(player);
 }
 
 void IndividualProgression::CheckAdjustments(Player* player) const
@@ -128,27 +135,9 @@ float IndividualProgression::ComputeVanillaAdjustment(uint8 playerLevel, float c
 // Return the highest progression level achieved by an account
 uint8 IndividualProgression::GetAccountProgression(uint32 accountId)
 {
-    uint8 progressionLevel = 0;
+    (void)accountId;
 
-    uint32 minQuest = 66000 + PROGRESSION_MOLTEN_CORE;
-    uint32 maxQuest = 66000 + PROGRESSION_WOTLK_TIER_5;
-
-    // Query rewarded hidden progression quests for all characters on the account
-    QueryResult result = CharacterDatabase.Query(
-        "SELECT cc.quest FROM character_queststatus_rewarded cc JOIN characters c ON cc.guid = c.guid WHERE c.account = {} AND cc.quest BETWEEN {} AND {};",
-        accountId, minQuest, maxQuest);
-
-    if (result)
-    {
-        do
-        {
-            uint32 questId = (*result)[0].Get<uint32>();
-            uint8 level = uint8(questId - 66000);
-            if (level > progressionLevel)
-                progressionLevel = level;
-        } while (result->NextRow());
-    }
-    return progressionLevel;
+    return sPhaseMgr.GetActiveContentStage();
 }
 
 void IndividualProgression::UpdateAccountReputation(uint32 factionId, uint32 accountId, Player* player)
@@ -1009,6 +998,79 @@ void IndividualProgression::AwardEarnedVanillaPvpTitles(Player* player)
     }
 }
 
+
+class IndividualProgressionGlobalStageSyncWorldScript : public WorldScript
+{
+public:
+    IndividualProgressionGlobalStageSyncWorldScript()
+        : WorldScript("IndividualProgressionGlobalStageSyncWorldScript")
+    {
+    }
+
+    void OnStartup() override
+    {
+        _lastContentStage = sPhaseMgr.GetActiveContentStage();
+
+        LOG_INFO(
+            "module",
+            "IndividualProgression: global progression authority enabled. "
+            "ContentStage={}.",
+            static_cast<unsigned>(_lastContentStage));
+    }
+
+    void OnUpdate(uint32 diff) override
+    {
+        _checkTimer += diff;
+
+        if (_checkTimer < 1000)
+            return;
+
+        _checkTimer = 0;
+
+        uint8 const currentStage =
+            sPhaseMgr.GetActiveContentStage();
+
+        if (currentStage == _lastContentStage)
+            return;
+
+        uint8 const previousStage = _lastContentStage;
+        _lastContentStage = currentStage;
+
+        uint32 syncedPlayers = 0;
+
+        WorldSessionMgr::SessionMap const& sessions =
+            sWorldSessionMgr->GetAllSessions();
+
+        for (auto const& sessionPair : sessions)
+        {
+            WorldSession* session = sessionPair.second;
+
+            if (!session)
+                continue;
+
+            Player* player = session->GetPlayer();
+
+            if (!player || !player->IsInWorld())
+                continue;
+
+            sIndividualProgression->SyncProgressionMarkers(player);
+            ++syncedPlayers;
+        }
+
+        LOG_INFO(
+            "module",
+            "IndividualProgression: ContentStage mirror synchronized "
+            "{} -> {} for {} online players.",
+            static_cast<unsigned>(previousStage),
+            static_cast<unsigned>(currentStage),
+            syncedPlayers);
+    }
+
+private:
+    uint32 _checkTimer = 0;
+    uint8 _lastContentStage = PROGRESSION_START;
+};
+
 class IndividualPlayerProgression_WorldScript : public WorldScript
 {
 private:
@@ -1135,4 +1197,5 @@ public:
 void AddSC_mod_individual_progression()
 {
     new IndividualPlayerProgression_WorldScript();
+    new IndividualProgressionGlobalStageSyncWorldScript();
 }

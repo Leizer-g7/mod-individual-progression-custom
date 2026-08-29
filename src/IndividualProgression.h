@@ -239,7 +239,7 @@ enum ProgressionState : uint8         // Progression stands for what has been co
     PROGRESSION_PRE_TBC         = 8,  // Karazhan, Gruul's Lair, Magtheridon's Lair
     PROGRESSION_TBC_TIER_1      = 9,  // Serpentshrine Cavern, Tempest Keep
     PROGRESSION_TBC_TIER_2      = 10, // Hyjal Summit and Black Temple
-//  PROGRESSION_TBC_TIER_3      = 11, // Zul'Aman
+    PROGRESSION_TBC_TIER_3      = 11, // Zul'Aman / compatibility stage
     PROGRESSION_TBC_TIER_4      = 12, // Sunwell Plateau
     PROGRESSION_TBC_TIER_5      = 13, // WotLK Naxx, EoE, OS
     PROGRESSION_WOTLK_TIER_1    = 14, // Ulduar
@@ -412,8 +412,9 @@ public:
     uint32 VanillaPvpKillRank1, VanillaPvpKillRank2, VanillaPvpKillRank3, VanillaPvpKillRank4, VanillaPvpKillRank5, VanillaPvpKillRank6, VanillaPvpKillRank7, VanillaPvpKillRank8, VanillaPvpKillRank9, VanillaPvpKillRank10, VanillaPvpKillRank11, VanillaPvpKillRank12, VanillaPvpKillRank13, VanillaPvpKillRank14;
     std::string excludedAccountsRegex, botAccountsRegex, sharedFactionIdsRegex;
 
-    // progression is derived from rewarded hidden quests (IDs 66000 + progression)
+    // hidden quests 66001..66018 are a compatibility mirror of the global PhaseMgr ContentStage
     uint8 GetPlayerProgressionFromQuests(Player* player) const;
+    void SyncProgressionMarkers(Player* player) const;
 
     bool hasPassedProgression(Player* player, ProgressionState state) const;
     static bool isBeforeProgression(Player* player, ProgressionState state) ;

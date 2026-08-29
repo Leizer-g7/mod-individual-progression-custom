@@ -2,6 +2,7 @@
 #include "ScriptMgr.h"
 #include "Tokenize.h"
 #include "IndividualProgression.h"
+#include "../../mod-phase-progression/src/PhaseMgr.h"
 #include "naxxramas_40.h"
 
 using namespace Acore::ChatCommands;
@@ -127,67 +128,28 @@ public:
 
     static bool HandleSetIndividualProgressionCommand(ChatHandler* handler, Optional<PlayerIdentifier> player, uint32 progressionLevel)
     {
-	    if (!progressionLevel && progressionLevel != 0)
-            return false;
+        (void)player;
+        (void)progressionLevel;
 
-        if ((progressionLevel > PROGRESSION_WOTLK_TIER_5) || progressionLevel == 11)
-        {
-            handler->SendSysMessage("Invalid Progression Level.");
-            return false;
-        }
+        handler->PSendSysMessage(
+            "Individual progression is controlled globally by "
+            ".progression content. Current global ContentStage = {}. "
+            "No individual progression change was made.",
+            static_cast<uint32>(
+                sPhaseMgr.GetActiveContentStage()));
 
-        player = PlayerIdentifier::FromTargetOrSelf(handler);
-        Player* target = player->GetConnectedPlayer();
-        std::string playername = target->GetName();
-        uint8 currentState = sIndividualProgression->GetPlayerProgressionFromQuests(target);
-        uint32 currentArea = target->GetAreaId();
-
-        if (progressionLevel < currentState)
-        {
-            CheckProgressionAchievements(target, currentState, progressionLevel);
-        }
-
-        sIndividualProgression->ForceUpdateProgressionState(target, static_cast<ProgressionState>(progressionLevel));
-        sIndividualProgression->checkIPPhasing(target, currentArea);
-
-        handler->PSendSysMessage("Updated Progression Level for |cff00ffff{}|r = |cff00ffff{}|r", playername, progressionLevel);
         return true;
     }
 
     static bool HandleSetBotIndividualProgressionCommand(ChatHandler* handler)
     {
-        Player* player = handler->GetSession()->GetPlayer();
+        handler->PSendSysMessage(
+            "Bot progression is controlled globally by "
+            ".progression content. Current global ContentStage = {}. "
+            "No bot progression change was made.",
+            static_cast<uint32>(
+                sPhaseMgr.GetActiveContentStage()));
 
-        if (!player)
-        {
-            handler->SendSysMessage("Player not found.");
-            return false;
-        }
-
-        Group* group = player->GetGroup();
-
-        std::string playername = player->GetName();
-        uint32 currentState = sIndividualProgression->GetPlayerProgressionFromQuests(player);
-        uint32 currentArea = player->GetAreaId();
-
-        if (!group)
-        {
-            handler->SendSysMessage("You need to be in a group to use this command.");
-            return false;
-        }
-
-        for (GroupReference* itr = group->GetFirstMember(); itr; itr = itr->next())
-        {
-            Player* member = itr->GetSource();
-            if (!member || sIndividualProgression->isNormalAccount(member))
-                continue;
-
-            sIndividualProgression->ForceUpdateProgressionState(member, static_cast<ProgressionState>(currentState));
-            sIndividualProgression->CheckAdjustments(member);
-            sIndividualProgression->checkIPPhasing(member, currentArea);
-        }
-
-        handler->PSendSysMessage("Updated Progression Level for all RND bots = |cff00ffff{}|r", currentState);
         return true;
     }
 
