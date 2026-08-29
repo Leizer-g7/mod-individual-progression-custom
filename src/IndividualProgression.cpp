@@ -10,8 +10,7 @@
 #include "../../mod-phase-progression/src/PhaseMgr.h"
 
 #include "Log.h"
-#include "WorldSession.h"
-#include "WorldSessionMgr.h"
+#include "ObjectAccessor.h"
 
 IndividualProgression* IndividualProgression::instance()
 {
@@ -1038,17 +1037,9 @@ public:
 
         uint32 syncedPlayers = 0;
 
-        WorldSessionMgr::SessionMap const& sessions =
-            sWorldSessionMgr->GetAllSessions();
-
-        for (auto const& sessionPair : sessions)
+        for (auto const& playerPair : ObjectAccessor::GetPlayers())
         {
-            WorldSession* session = sessionPair.second;
-
-            if (!session)
-                continue;
-
-            Player* player = session->GetPlayer();
+            Player* player = playerPair.second;
 
             if (!player || !player->IsInWorld())
                 continue;
