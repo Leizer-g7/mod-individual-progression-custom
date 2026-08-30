@@ -29,35 +29,13 @@ public:
         // 66001..66018 only mirror the global ContentStage for SQL.
         sIndividualProgression->SyncProgressionMarkers(player);
 
-        if (!sIndividualProgression->isNormalAccount(player)) // bot or exluded account
+        if (!sIndividualProgression->isNormalAccount(player)) // bot or excluded account
         {
             if (sIndividualProgression->isBotAccount(player))
                 sIndividualProgression->UpdateRNDbotSpells(player); // give class spells to RNDbots that have been removed from trainers by IP.
-            
-            if (player->GetLevel() <= 60)
-                sIndividualProgression->ForceUpdateProgressionState(player, static_cast<ProgressionState>(0));
-            else if ((player->GetLevel() > 60) && (player->GetLevel() <= 70))
-                sIndividualProgression->ForceUpdateProgressionState(player, static_cast<ProgressionState>(8));
-            else
-                sIndividualProgression->ForceUpdateProgressionState(player, static_cast<ProgressionState>(13));
         }
         else // normal account
         {
-            if ((player->getRace() == RACE_DRAENEI || player->getRace() == RACE_BLOODELF) && sIndividualProgression->tbcRacesStartingProgression && !sIndividualProgression->hasPassedProgression(player, static_cast<ProgressionState>(sIndividualProgression->tbcRacesStartingProgression)))
-            {
-                sIndividualProgression->UpdateProgressionState(player, static_cast<ProgressionState>(sIndividualProgression->tbcRacesStartingProgression));
-            }
-
-            if (player->getClass() == CLASS_DEATH_KNIGHT && sIndividualProgression->deathKnightStartingProgression && !sIndividualProgression->hasPassedProgression(player, static_cast<ProgressionState>(sIndividualProgression->deathKnightStartingProgression)))
-            {
-                sIndividualProgression->UpdateProgressionState(player, static_cast<ProgressionState>(sIndividualProgression->deathKnightStartingProgression));
-            }
-
-            if (sIndividualProgression->startingProgression && !sIndividualProgression->hasPassedProgression(player, static_cast<ProgressionState>(sIndividualProgression->startingProgression)))
-            {
-                sIndividualProgression->UpdateProgressionState(player, static_cast<ProgressionState>(sIndividualProgression->startingProgression));
-            }
-
             sIndividualProgression->checkIPProgression(player);
         }
 

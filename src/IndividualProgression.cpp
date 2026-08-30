@@ -810,9 +810,7 @@ void IndividualProgression::checkKillProgression(Player* killer, Creature* kille
     auto bossKill = bossMap.find(entry);
     if (bossKill != bossMap.end())
     {
-        ProgressionState prog = bossKill->second;
-        if (!progressionLimit || (progressionLimit >= prog))
-            UpdateProgressionState(killer, prog);
+        UpdateProgressionState(killer, bossKill->second);
 
         if (entry == KELTHUZAD_40)
             UpdateProgressionAchievements(killer, KEL_THUZAD_40_KILL);
@@ -1084,14 +1082,10 @@ private:
         sIndividualProgression->VanillaHunterPets = sConfigMgr->GetOption<bool>("IndividualProgression.VanillaHunterPets", true);
         sIndividualProgression->WarlockDemonTrainers = sConfigMgr->GetOption<bool>("IndividualProgression.WarlockDemonTrainers", true);
         sIndividualProgression->simpleConfigOverride = sConfigMgr->GetOption<bool>("IndividualProgression.SimpleConfigOverride", true);
-        sIndividualProgression->progressionLimit = sConfigMgr->GetOption<uint8>("IndividualProgression.ProgressionLimit", 0);
-        sIndividualProgression->startingProgression = sConfigMgr->GetOption<uint8>("IndividualProgression.StartingProgression", 0);
         sIndividualProgression->repeatableVanillaQuestsXp = sConfigMgr->GetOption<bool>("IndividualProgression.RepeatableVanillaQuestsXP", true);
         sIndividualProgression->disableDefaultProgression = sConfigMgr->GetOption<bool>("IndividualProgression.DisableDefaultProgression", false);
         sIndividualProgression->tbcRacesProgressionLevel = sConfigMgr->GetOption<uint8>("IndividualProgression.TbcRacesUnlockProgression", 0);
-        sIndividualProgression->tbcRacesStartingProgression = sConfigMgr->GetOption<uint8>("IndividualProgression.tbcRacesStartingProgression", 0);
         sIndividualProgression->deathKnightProgressionLevel = sConfigMgr->GetOption<uint8>("IndividualProgression.DeathKnightUnlockProgression", 13);
-        sIndividualProgression->deathKnightStartingProgression = sConfigMgr->GetOption<uint8>("IndividualProgression.DeathKnightStartingProgression", 13);
         sIndividualProgression->RequiredZulGurubProgression = sConfigMgr->GetOption<uint8>("IndividualProgression.RequiredZulGurubProgression", 3);
         sIndividualProgression->RequiredZulAmanProgression = sConfigMgr->GetOption<uint8>("IndividualProgression.RequiredZulAmanProgression", 12);
         sIndividualProgression->LoadCustomProgressionEntries(sConfigMgr->GetOption<std::string>("IndividualProgression.CustomProgression", ""));
@@ -1126,7 +1120,6 @@ private:
         sIndividualProgression->EnableAllSpellRanks = sConfigMgr->GetOption<bool>("IndividualProgression.EnableAllSpellRanks", false);
         sIndividualProgression->LimitedSetRepCommand = sConfigMgr->GetOption<bool>("IndividualProgression.LimitedSetRepCommand", true);
         sIndividualProgression->sharedFactionIdsRegex = sConfigMgr->GetOption<std::string>("IndividualProgression.sharedFactionIdsRegex", "59|270|349|509|510|529|576|589|609|729|730|749|889|890|909");
-        sIndividualProgression->BotAccountsMaxLevel = sConfigMgr->GetOption<uint8>("IndividualProgression.BotAccountsMaxLevel", 80);
     }
 
     static void LoadXpValues()
