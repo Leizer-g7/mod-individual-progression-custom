@@ -360,32 +360,6 @@ public:
         if (!sIndividualProgression->isNormalAccount(player))
             return;
 
-        if (sIndividualProgression->questMoneyAtLevelCap)
-        {
-            int32 moneyRew = 0;
-            int32 XPValue = 0;
-
-            if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_PRE_TBC) && player->GetLevel() == 60)
-                XPValue = quest->XPValue(quest->GetQuestLevel() == -1 ? 60 : quest->GetQuestLevel());
-            else if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5) && player->GetLevel() == 70)
-                XPValue = quest->XPValue(quest->GetQuestLevel() == -1 ? 70 : quest->GetQuestLevel());
-
-            moneyRew = (XPValue * (6 * COPPER)) * sWorld->getRate(RATE_REWARD_BONUS_MONEY);
-
-            if (moneyRew > 0)
-            {
-                player->ModifyMoney(moneyRew);
-                uint32 gold = moneyRew / GOLD;
-                uint32 silv = (moneyRew % GOLD) / SILVER;
-                // uint32 copp = (moneyRew % GOLD) % SILVER;
-
-                if (gold > 0)
-                    ChatHandler(player->GetSession()).PSendSysMessage("Received {} Gold, {} Silver.", gold, silv);
-                else
-                    ChatHandler(player->GetSession()).PSendSysMessage("Received {} Silver.", silv);
-            }
-        }
-
         switch (quest->GetQuestId())
         {
         case BANG_A_GONG:
