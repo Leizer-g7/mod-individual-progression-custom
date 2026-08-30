@@ -263,16 +263,6 @@ IndividualProgression.AV.StablesTurnIns = 10
 IndividualProgression.AV.GossipExactNumbers = 0
 IndividualProgression.MaxMonsterSight = 1
 
-# IndividualProgression.QuestMoneyAtLevelCap
-#
-#        Description: If enabled, players at the level cap for the current progression stage will receive extra money when completing quests. This feature was added in patch 1.10
-#                     (Please note that completing quests at the level cap of the server, configured in worldserver.conf will always provide extra money, as hard-coded in AzerothCore.)
-#
-#        Default:     1 - Enabled
-#                     0 - Disabled
-#
-IndividualProgression.QuestMoneyAtLevelCap = 1
-
 # IndividualProgression.RepeatableVanillaQuestsXP
 #
 #        Description: Some repeatable quests in Vanilla gave XP every time they were turned in.
