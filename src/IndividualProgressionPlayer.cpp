@@ -887,36 +887,33 @@ public:
         if (!accountId || !charRace || !charClass)
             return false;
 
-        if ((!sIndividualProgression->enabled) ||
-            (charRace != RACE_DRAENEI && charRace != RACE_BLOODELF && charClass != CLASS_DEATH_KNIGHT) ||
-            (!sIndividualProgression->tbcRacesProgressionLevel && !sIndividualProgression->deathKnightProgressionLevel))
+        // Death Knight availability is owned exclusively by PhaseMgr.
+        // Individual Progression only retains the optional TBC race gate.
+        if (!sIndividualProgression->enabled ||
+            (charRace != RACE_DRAENEI && charRace != RACE_BLOODELF) ||
+            !sIndividualProgression->tbcRacesProgressionLevel)
         {
             return true;
         }
 
-        // Check if the account is a bot or excluded from progression
+        // Check if the account is a bot or excluded from progression.
         std::string accountName;
         bool accountNameFound = AccountMgr::GetName(accountId, accountName);
         std::regex botAccountsRegex(sIndividualProgression->botAccountsRegex);
         std::regex excludedAccountsRegex(sIndividualProgression->excludedAccountsRegex);
-  
-        if (accountNameFound && (std::regex_match(accountName, botAccountsRegex) || std::regex_match(accountName, excludedAccountsRegex)))
-            return true;
 
-        uint8 highestProgression = sIndividualProgression->GetAccountProgression(accountId);
-        bool allowed = true;
-        
-        if ((charRace == RACE_DRAENEI || charRace == RACE_BLOODELF) && sIndividualProgression->tbcRacesProgressionLevel != 0)
+        if (accountNameFound &&
+            (std::regex_match(accountName, botAccountsRegex) ||
+             std::regex_match(accountName, excludedAccountsRegex)))
         {
-            if (highestProgression < sIndividualProgression->tbcRacesProgressionLevel)
-                allowed = false;
+            return true;
         }
-        if (charClass == CLASS_DEATH_KNIGHT && sIndividualProgression->deathKnightProgressionLevel != 0)
-        {
-            if (highestProgression < sIndividualProgression->deathKnightProgressionLevel)
-                allowed = false;
-        }
-        return allowed;
+
+        uint8 highestProgression =
+            sIndividualProgression->GetAccountProgression(accountId);
+
+        return highestProgression >=
+            sIndividualProgression->tbcRacesProgressionLevel;
     }
 };
 

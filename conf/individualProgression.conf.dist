@@ -288,21 +288,6 @@ IndividualProgression.RepeatableVanillaQuestsXP = 1
 #
 IndividualProgression.TbcRacesUnlockProgression = 0
 
-# IndividualProgression.DeathKnightUnlockProgression
-#
-#        Description: The progression stage at which Death Knight characters can be created.
-#                     Death Knights will be available when the player reaches this level with any character on their account.
-#                     Disable to have the Death Knight class available by default.
-#                     Please note that all other Death Knight creation restrictions from worldserver.conf still apply.
-#                     The default value is to not allow Death Knight creation until TBC content is cleared.
-#                     This is due to the game not having proper progression balancing for Death Knights until WotLK.
-#
-#        Default:     13 - TBC must be completed to create Death Knights
-#                     0 - Death Knights always available to be created
-#                     1-12, 14-18 - Set a different required progression stage to create Death Knights
-#
-IndividualProgression.DeathKnightUnlockProgression = 13
-
 # IndividualProgression.RequiredZulGurubProgression
 #
 #        Description: The progression stage at which Zul'Gurub will be available
