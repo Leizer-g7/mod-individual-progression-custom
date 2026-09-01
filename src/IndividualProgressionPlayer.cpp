@@ -148,26 +148,38 @@ public:
         }
         if (mapid == MAP_OUTLAND)
         {
-            if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_PRE_TBC))
+            /*
+             * Global Outland availability is owned by PhaseMgr.
+             *
+             * Individual Progression only keeps its historical
+             * TBC race/start-zone compatibility here.
+             */
+            if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_PRE_TBC) &&
+                IsTBCRaceStartingZone(mapid, x, y, z))
             {
                 uint32 accountId = player->GetSession()->GetAccountId();
                 uint8 highestProgression = sIndividualProgression->GetAccountProgression(accountId);
 
-                if ((highestProgression < sIndividualProgression->tbcRacesProgressionLevel) && (player->getRace() != RACE_DRAENEI && player->getRace() != RACE_BLOODELF))
+                if ((highestProgression < sIndividualProgression->tbcRacesProgressionLevel) &&
+                    (player->getRace() != RACE_DRAENEI &&
+                     player->getRace() != RACE_BLOODELF))
                 {
-                    ChatHandler(player->GetSession()).PSendSysMessage("Progression Level Required = |cff00ffff{}|r", sIndividualProgression->tbcRacesProgressionLevel);
+                    ChatHandler(player->GetSession()).PSendSysMessage(
+                        "Progression Level Required = |cff00ffff{}|r",
+                        sIndividualProgression->tbcRacesProgressionLevel);
                     return false;
                 }
-                else
-                    return IsTBCRaceStartingZone(mapid, x, y, z);
             }
 
-            Map const *map = sMapMgr->FindMap(mapid, 0);
+            Map const* map = sMapMgr->FindMap(mapid, 0);
             uint32 zoneId = map->GetZoneId(0, x, y, z);
 
-            if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_4) && zoneId == AREA_ISLE_OF_QUEL_DANAS)
+            if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_4) &&
+                zoneId == AREA_ISLE_OF_QUEL_DANAS)
             {
-                ChatHandler(player->GetSession()).PSendSysMessage("Progression Level Required = |cff00ffff{}|r", PROGRESSION_TBC_TIER_4);
+                ChatHandler(player->GetSession()).PSendSysMessage(
+                    "Progression Level Required = |cff00ffff{}|r",
+                    PROGRESSION_TBC_TIER_4);
                 return false;
             }
         }
@@ -181,49 +193,6 @@ public:
                 ChatHandler(player->GetSession()).PSendSysMessage("Progression Level Required = |cff00ffff{}|r", REQUIRED_ZA_PROGRESSION);
                 return false;
             }
-        }
-        if (mapid == MAP_NORTHREND && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5))
-        {
-            const uint16 AREA_COLD_HEARTH_MANOR = 166;
-            const uint16 AREA_DRYGULCH_RAVINE = 370;
-            const uint16 AREA_STORMWIND_GREAT_SEA = 2364;
-            const uint16 AREA_WETLANDS_GREAT_SEA = 2365;
-            const uint16 AREA_STORMWIND_HARBOR = 4411;
-
-            uint16 NPC_DEATHGUARD_BARTH = 31708; // Zeppelin Crewman in Tirisfal Glades
-            uint16 NPC_GRUNT_GRITCH = 31726; // Zeppelin Crewman in Durotar
-            uint16 NPC_SAILOR_JANSEN = 31759;
-            uint16 NPC_SAILOR_DAVIES = 31761;
-            uint16 NPC_SAILOR_PICARDO = 31792;
-
-            switch (player->GetAreaId())
-            {
-            case AREA_STORMWIND_GREAT_SEA:
-                if (player->FindNearestCreature(NPC_SAILOR_PICARDO, 80.0f))
-                    player->TeleportTo(0, -8290.685f, 1395.097f, 4.851f, 0); // Stormwind Harbor
-                break;
-            case AREA_STORMWIND_HARBOR:
-                if (player->FindNearestCreature(NPC_SAILOR_JANSEN, 60.0f) || player->FindNearestCreature(NPC_SAILOR_DAVIES, 40.0f))
-                    player->TeleportTo(0, -8641.461f, 1322.536f, 5.537f, 0); // Stormwind Harbor
-                break;
-            case AREA_WETLANDS_GREAT_SEA:
-                if (player->FindNearestCreature(NPC_SAILOR_JANSEN, 60.0f) || player->FindNearestCreature(NPC_SAILOR_DAVIES, 40.0f))
-                    player->TeleportTo(0, -3730.277f, -584.316f, 4.7365f, 0); // Menethil Harbor
-                break;
-            case AREA_DUROTAR:
-            case AREA_DRYGULCH_RAVINE:
-                if (player->FindNearestCreature(NPC_GRUNT_GRITCH, 40.0f))
-                    player->TeleportTo(1, 1174.13f, -4152.37f, 51.746f, 0); // Durotar Zeppelin Master
-                break;
-            case AREA_TIRISFAL_GLADES:
-            case AREA_COLD_HEARTH_MANOR:
-                if (player->FindNearestCreature(NPC_DEATHGUARD_BARTH, 40.0f))
-                    player->TeleportTo(0, 2060.0942f, 361.5912f, 82.5f, 0); // Tirisfal Glades Zeppelin Master
-                break;
-            }
-
-            ChatHandler(player->GetSession()).PSendSysMessage("Progression Level Required = |cff00ffff{}|r", PROGRESSION_TBC_TIER_5);
-            return false;
         }
         if (mapid == MAP_ULDUAR && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_WOTLK_TIER_1))
         {
@@ -317,12 +286,6 @@ public:
         InstanceTemplate const* instanceTemplate = sObjectMgr->GetInstanceTemplate(mapid);
         if (instanceTemplate)
         {
-            if (instanceTemplate->Parent == MAP_OUTLAND && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_PRE_TBC))
-                return false;
-
-            if (instanceTemplate->Parent == MAP_NORTHREND && mapid != MAP_NAXXRAMAS && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5))
-                return false;
-
             if (instanceTemplate->Parent == MAP_NORTHREND && mapid == MAP_NAXXRAMAS && player->GetLevel() <= 70 && (!sIndividualProgression->isAttuned(player) ||  sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5) ))
                 return false;
         }
