@@ -216,16 +216,6 @@ IndividualProgression.SimpleConfigOverride = 1
 #
 IndividualProgression.DisableQuestMarkers = 1
 
-# IndividualProgression.DisableRDF
-#
-#        Description: Enable or disable the Random Dungeon Finder feature within the context of Individual Progression.
-#                     Queuing for specific dungeons and Holiday Events will still be possible. (Use DungeonFinder.OptionsMask in worldserver.conf to completely disable the LFG tool.)
-#
-#        Default:     0 - RDF Enabled
-#                     1 - RDF Disabled
-#
-IndividualProgression.DisableRDF = 0
-
 # IndividualProgression.AlteracValley
 #
 #        Description: Number of Armor Scraps quest TURN-INS (20 scraps each) a team needs before its graveyard defenders upgrade to the next tier.
