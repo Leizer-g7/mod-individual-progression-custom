@@ -20,15 +20,6 @@
 #
 IndividualProgression.Enable = 1
 
-# IndividualProgression.EnforceGroupRules
-#
-#        Description: Enable this to only allow players to group with others in the same progression phase
-#
-#        Default:     0 - Disabled
-#                     1 - Enabled
-#
-IndividualProgression.EnforceGroupRules = 0
-
 # IndividualProgression.VanillaPowerAdjustment
 #
 #        Description: Adjustment to player's attack power before completing Vanilla content and opening the Dark Portal
