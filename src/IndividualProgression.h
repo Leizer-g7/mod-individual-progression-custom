@@ -404,10 +404,9 @@ class IndividualProgression
 public:
     static IndividualProgression* instance();
 
-    std::map<uint32, uint8> customProgressionMap;
     questXpMapType questXpMap;
     float vanillaPowerAdjustment, tbcPowerAdjustment, vanillaHealingAdjustment, tbcHealingAdjustment;
-    bool enabled, questXpFix, EnableSetRepCommand, EnableAllSpellRanks, LimitedSetRepCommand, fishingFix, VanillaHunterPets, WarlockDemonTrainers, simpleConfigOverride, MaxMonsterSight, repeatableVanillaQuestsXp, disableDefaultProgression, earlyDungeonSet2, earlyScourgeBosses, requireNaxxStrath, doableNaxx40Bosses_4H, doableNaxx40Bosses_Gluth, doableNaxx40Bosses_Patchwerk, doableNaxx40Bosses_Razuvious, DisableQuestMarkers, VanillaPvpTitlesKeepPostVanilla, VanillaPvpTitlesEarnPostVanilla, BotAccountsEarnPvPTitles, BotOnlyAdjustments;
+    bool enabled, questXpFix, EnableSetRepCommand, EnableAllSpellRanks, LimitedSetRepCommand, fishingFix, VanillaHunterPets, WarlockDemonTrainers, simpleConfigOverride, MaxMonsterSight, repeatableVanillaQuestsXp, earlyDungeonSet2, earlyScourgeBosses, requireNaxxStrath, doableNaxx40Bosses_4H, doableNaxx40Bosses_Gluth, doableNaxx40Bosses_Patchwerk, doableNaxx40Bosses_Razuvious, DisableQuestMarkers, VanillaPvpTitlesKeepPostVanilla, VanillaPvpTitlesEarnPostVanilla, BotAccountsEarnPvPTitles, BotOnlyAdjustments;
     int tbcRacesProgressionLevel, RequiredZulGurubProgression, RequiredZulAmanProgression, tbcArenaSeason, wotlkArenaSeason;
     uint32 VanillaPvpKillRank1, VanillaPvpKillRank2, VanillaPvpKillRank3, VanillaPvpKillRank4, VanillaPvpKillRank5, VanillaPvpKillRank6, VanillaPvpKillRank7, VanillaPvpKillRank8, VanillaPvpKillRank9, VanillaPvpKillRank10, VanillaPvpKillRank11, VanillaPvpKillRank12, VanillaPvpKillRank13, VanillaPvpKillRank14;
     std::string excludedAccountsRegex, botAccountsRegex, sharedFactionIdsRegex;
@@ -418,30 +417,22 @@ public:
 
     bool hasPassedProgression(Player* player, ProgressionState state) const;
     static bool isBeforeProgression(Player* player, ProgressionState state) ;
-    void UpdateProgressionState(Player* player, ProgressionState newState) const;
-    static void ForceUpdateProgressionState(Player* player, ProgressionState newState);
 
     void CheckAdjustments(Player* player) const;
-    bool hasCustomProgressionValue(uint32 creatureEntry);
     bool isExcludedAccount(Player* player);
     bool isBotAccount(Player* player);
     bool isNormalAccount(Player* player);
-    void SyncBotsProgressionToLeader(Group* group);
     void checkHunterPetSpells(Player* player);
     void checkWarlockPetSpells(Player* player);
     bool isAttuned(Player* player);
     bool isPlayerInDungeonOrRaid(Player* player);
     void checkIPPhasing(Player* player, uint32 newArea);
-    void checkIPProgression(Player* player);
     void UpdateProgressionAchievements(Player* player, uint16 achievementID);
     void UpdateGroupAttunement(Player* player, std::string location);
     void UpdateRNDbotSpells(Player* player);
-    void checkKillProgression(Player* player, Creature* killed);
-    bool checkCustomKillProgression(Player* killer, Creature* killed);
 	void UpdateAccountReputation(uint32 factionId, uint32 accountId, Player* player);
     void CleanUpVanillaPvpTitles(Player* player);
     void AwardEarnedVanillaPvpTitles(Player* player);
-    static void LoadCustomProgressionEntries(const std::string& customProgressionString);
     static void RemovePlayerAchievement(uint16 playerGUID, uint16 achievementId);
     static float ComputeVanillaAdjustment(uint8 playerLevel, float configAdjustmentValue);
     static uint8 GetAccountProgression(uint32 accountId);

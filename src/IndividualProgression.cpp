@@ -89,26 +89,6 @@ void IndividualProgression::SyncProgressionMarkers(Player* player) const
     }
 }
 
-void IndividualProgression::UpdateProgressionState(Player* player, ProgressionState newState) const
-{
-    (void)newState;
-
-    if (!enabled || !player || !player->IsInWorld())
-        return;
-
-    SyncProgressionMarkers(player);
-}
-
-void IndividualProgression::ForceUpdateProgressionState(Player* player, ProgressionState newState)
-{
-    (void)newState;
-
-    if (!player || !player->IsInWorld())
-        return;
-
-    sIndividualProgression->SyncProgressionMarkers(player);
-}
-
 void IndividualProgression::CheckAdjustments(Player* player) const
 {
     if (!enabled || !player || !player->IsInWorld())
@@ -285,34 +265,6 @@ void IndividualProgression::RemovePlayerAchievement(uint16 playerGUID, uint16 ac
     CharacterDatabase.Query("DELETE FROM `character_achievement` WHERE `guid` = {} AND `achievement` = {}", playerGUID, achievementId);
 }
 
-void IndividualProgression::LoadCustomProgressionEntries(std::string const& customProgressionString)
-{
-    std::string delimitedValue;
-    std::stringstream customProgressionStream;
-
-    customProgressionStream.str(customProgressionString);
-    while (std::getline(customProgressionStream, delimitedValue, ','))
-    {
-        std::string pairOne, pairTwo;
-        std::stringstream progressionPairStream(delimitedValue);
-        progressionPairStream>>pairOne>>pairTwo;
-        uint32 creatureEntryId = atoi(pairOne.c_str());
-        uint8 progressionValue = atoi(pairTwo.c_str());
-        sIndividualProgression->customProgressionMap[creatureEntryId] = progressionValue;
-    }
-}
-
-bool IndividualProgression::hasCustomProgressionValue(uint32 creatureEntry)
-{
-    if (!creatureEntry)
-        return false;
-
-    if (customProgressionMap.empty())
-        return false;
-
-    return (customProgressionMap.find(creatureEntry) != customProgressionMap.end());
-}
-
 bool IndividualProgression::isAttuned(Player* player)
 {
     if (!player || !player->IsInWorld())
@@ -366,34 +318,6 @@ bool IndividualProgression::isPlayerInDungeonOrRaid(Player* player)
 
     Map const* map = player->GetMap();
     return (map && (map->IsDungeon() || map->IsRaid()));
-}
-
-void IndividualProgression::SyncBotsProgressionToLeader(Group* group)
-{
-    if (!group)
-        return;
-
-    ObjectGuid leaderGuid = group->GetLeaderGUID();
-    if (!leaderGuid)
-        return;
-
-    Player* leader = ObjectAccessor::FindPlayer(leaderGuid);
-    if (!leader || !isNormalAccount(leader))
-        return;
-
-    uint8 refProgress = GetPlayerProgressionFromQuests(leader);
-
-    if (!refProgress)
-        return;
-
-    for (GroupReference* itr = group->GetFirstMember(); itr; itr = itr->next())
-    {
-        Player* member = itr->GetSource();
-        if (!member || isNormalAccount(member))
-            continue;
-
-        ForceUpdateProgressionState(member, static_cast<ProgressionState>(refProgress));
-    }
 }
 
 void IndividualProgression::checkIPPhasing(Player* player, uint32 newArea)
@@ -709,114 +633,6 @@ void IndividualProgression::checkIPPhasing(Player* player, uint32 newArea)
     }
 }
 
-void IndividualProgression::checkIPProgression(Player* killer)
-{
-    if (!enabled || disableDefaultProgression)
-        return;
-
-    if (!killer || !killer->IsInWorld())
-        return;
-
-    uint8 currentState = GetPlayerProgressionFromQuests(killer);
-
-    static const std::vector<std::pair<uint16, ProgressionState>> achievementMap =
-    {
-        { HALION_KILL,        PROGRESSION_WOTLK_TIER_5   },
-        { LICH_KING_KILL,     PROGRESSION_WOTLK_TIER_4   },
-        { ANUB_ARAK_KILL,     PROGRESSION_WOTLK_TIER_3   },
-        { KEL_THUZAD_KILL,    PROGRESSION_WOTLK_TIER_1   },
-        { KIL_JAEDEN_KILL,    PROGRESSION_TBC_TIER_5     },
-//      { ZUL_JIN_KILL,       PROGRESSION_TBC_TIER_4     },
-        { ILLIDAN_KILL,       PROGRESSION_TBC_TIER_4     },
-        { KAEL_THAS_KILL,     PROGRESSION_TBC_TIER_2     },
-        { MALCHEZAAR_KILL,    PROGRESSION_TBC_TIER_1     },
-        { KEL_THUZAD_40_KILL, PROGRESSION_NAXX40         },
-        { C_THUN_KILL,        PROGRESSION_AQ             },
-        { NEFARIAN_KILL,      PROGRESSION_BLACKWING_LAIR },
-        { ONYXIA_KILL,        PROGRESSION_ONYXIA         },
-        { RAGNAROS_KILL,      PROGRESSION_MOLTEN_CORE    }
-    };
-
-    for (auto const& [achievementId, progState] : achievementMap)
-    {
-        if (killer->HasAchieved(achievementId))
-        {
-            if (currentState < progState)
-                UpdateProgressionState(killer, progState);
-            return;
-        }
-    }
-}
-
-bool IndividualProgression::checkCustomKillProgression(Player* killer, Creature* killed)
-{
-    if (!enabled)
-        return false;
-
-    if (!killed || !killer || !killer->IsInWorld())
-        return false;
-
-    uint32 entry = killed->GetEntry();
-
-    if (hasCustomProgressionValue(entry))
-    {
-        UpdateProgressionState(killer, static_cast<ProgressionState>(customProgressionMap[entry]));
-        return true;
-    }
-
-    return false;
-}
-
-void IndividualProgression::checkKillProgression(Player* killer, Creature* killed)
-{
-    if (!enabled)
-        return;
-
-    if (!killed || !killer || !killer->IsInWorld())
-        return;
-
-    uint32 entry = killed->GetEntry();
-
-    /*
-    if (hasCustomProgressionValue(entry))
-    {
-        UpdateProgressionState(killer, static_cast<ProgressionState>(customProgressionMap[entry]));
-        return;
-    }
-
-    if (disableDefaultProgression)
-        return;
-    */
-
-    static const std::unordered_map<uint32, ProgressionState> bossMap =
-    {
-        { RAGNAROS,     PROGRESSION_MOLTEN_CORE    },
-        { ONYXIA_40,    PROGRESSION_ONYXIA         },
-        { NEFARIAN,     PROGRESSION_BLACKWING_LAIR },
-        { CTHUN,        PROGRESSION_AQ             },
-        { KELTHUZAD_40, PROGRESSION_NAXX40         },
-        { MALCHEZAAR,   PROGRESSION_TBC_TIER_1     },
-        { KAELTHAS,     PROGRESSION_TBC_TIER_2     },
-        { ILLIDAN,      PROGRESSION_TBC_TIER_4     },
-//      { ZULJIN,       PROGRESSION_TBC_TIER_4     },
-        { KILJAEDEN,    PROGRESSION_TBC_TIER_5     },
-        { KELTHUZAD,    PROGRESSION_WOTLK_TIER_1   },
-        { YOGGSARON,    PROGRESSION_WOTLK_TIER_2   },
-        { ANUBARAK,     PROGRESSION_WOTLK_TIER_3   },
-        { LICH_KING,    PROGRESSION_WOTLK_TIER_4   },
-        { HALION,       PROGRESSION_WOTLK_TIER_5   }
-    };
-
-    auto bossKill = bossMap.find(entry);
-    if (bossKill != bossMap.end())
-    {
-        UpdateProgressionState(killer, bossKill->second);
-
-        if (entry == KELTHUZAD_40)
-            UpdateProgressionAchievements(killer, KEL_THUZAD_40_KILL);
-    }
-}
-
 void IndividualProgression::UpdateProgressionAchievements(Player* player, uint16 achievementID)
 {
     if (!achievementID || !player || !player->IsInWorld())
@@ -1015,15 +831,8 @@ public:
             static_cast<unsigned>(_lastContentStage));
     }
 
-    void OnUpdate(uint32 diff) override
+    void OnUpdate(uint32 /*diff*/) override
     {
-        _checkTimer += diff;
-
-        if (_checkTimer < 1000)
-            return;
-
-        _checkTimer = 0;
-
         uint8 const currentStage =
             sPhaseMgr.GetActiveContentStage();
 
@@ -1056,7 +865,6 @@ public:
     }
 
 private:
-    uint32 _checkTimer = 0;
     uint8 _lastContentStage = PROGRESSION_START;
 };
 
@@ -1065,7 +873,6 @@ class IndividualPlayerProgression_WorldScript : public WorldScript
 private:
     static void LoadConfig()
     {
-        sIndividualProgression->customProgressionMap.clear();
         sIndividualProgression->enabled = sConfigMgr->GetOption<bool>("IndividualProgression.Enable", true);
         sIndividualProgression->vanillaPowerAdjustment = sConfigMgr->GetOption<float>("IndividualProgression.VanillaPowerAdjustment", 1);
         sIndividualProgression->vanillaHealingAdjustment = sConfigMgr->GetOption<float>("IndividualProgression.VanillaHealingAdjustment", 1);
@@ -1082,11 +889,9 @@ private:
         sIndividualProgression->WarlockDemonTrainers = sConfigMgr->GetOption<bool>("IndividualProgression.WarlockDemonTrainers", true);
         sIndividualProgression->simpleConfigOverride = sConfigMgr->GetOption<bool>("IndividualProgression.SimpleConfigOverride", true);
         sIndividualProgression->repeatableVanillaQuestsXp = sConfigMgr->GetOption<bool>("IndividualProgression.RepeatableVanillaQuestsXP", true);
-        sIndividualProgression->disableDefaultProgression = sConfigMgr->GetOption<bool>("IndividualProgression.DisableDefaultProgression", false);
         sIndividualProgression->tbcRacesProgressionLevel = sConfigMgr->GetOption<uint8>("IndividualProgression.TbcRacesUnlockProgression", 0);
         sIndividualProgression->RequiredZulGurubProgression = sConfigMgr->GetOption<uint8>("IndividualProgression.RequiredZulGurubProgression", 3);
         sIndividualProgression->RequiredZulAmanProgression = sConfigMgr->GetOption<uint8>("IndividualProgression.RequiredZulAmanProgression", 12);
-        sIndividualProgression->LoadCustomProgressionEntries(sConfigMgr->GetOption<std::string>("IndividualProgression.CustomProgression", ""));
         sIndividualProgression->earlyDungeonSet2 = sConfigMgr->GetOption<bool>("IndividualProgression.AllowEarlyDungeonSet2", false);
         sIndividualProgression->earlyScourgeBosses = sConfigMgr->GetOption<bool>("IndividualProgression.AllowEarlyScourgeBosses", false);
         sIndividualProgression->tbcArenaSeason = sConfigMgr->GetOption<uint8>("IndividualProgression.TBC.ArenaSeason", 1);

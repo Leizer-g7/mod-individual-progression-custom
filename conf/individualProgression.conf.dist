@@ -288,29 +288,6 @@ IndividualProgression.RequiredZulGurubProgression = 3
 #
 IndividualProgression.RequiredZulAmanProgression = 12
 
-# IndividualProgression.DisableDefaultProgression
-#
-#        Description: Disable the regular progression flow, so progression must be advanced through custom creature progression entries
-#
-#        Default:     0 - Default Progression
-#                     1 - Custom Progression
-#
-IndividualProgression.DisableDefaultProgression = 0
-
-# IndividualProgression.CustomProgression
-#
-#        Description: A list of creature IDs paired to progression states. When a creature on the list is defeated by a player,
-#                     the player will be set to that progression state. Used for custom, non-standard progression.
-#                     This will replace the default progression. Progression states that haven't been giving a custom creature kill remain the same.
-#
-#                     Example: IndividualProgression.CustomProgression = "639 8, 3975, 13"
-#                     This would allow players access to TBC after defeating VanCleef (entry 639) and Northrend after defeating Herod (entry 3975).
-#                     Only works for creatures with a rank higher than ELITE to avoid having to check progression after every kill.
-#
-#        Default:     "" - Disabled (default)
-#
-IndividualProgression.CustomProgression = ""
-
 # IndividualProgression.AllowEarlyDungeonSet2
 #
 #        Description: Dungeon Set 2 was introduced in patch 1.10 and requires completing some AQ content that is normally not available until a later phase

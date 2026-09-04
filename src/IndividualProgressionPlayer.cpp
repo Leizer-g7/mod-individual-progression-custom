@@ -34,10 +34,6 @@ public:
             if (sIndividualProgression->isBotAccount(player))
                 sIndividualProgression->UpdateRNDbotSpells(player); // give class spells to RNDbots that have been removed from trainers by IP.
         }
-        else // normal account
-        {
-            sIndividualProgression->checkIPProgression(player);
-        }
 
         sIndividualProgression->CheckAdjustments(player);
 
@@ -303,19 +299,6 @@ public:
 
         switch (quest->GetQuestId())
         {
-        case BANG_A_GONG:
-        case SIMPLY_BANG_A_GONG:
-            if (!sIndividualProgression->disableDefaultProgression)
-                 sIndividualProgression->UpdateProgressionState(player, PROGRESSION_PRE_AQ);
-            break;
-        case CHAOS_AND_DESTRUCTION:
-            if (!sIndividualProgression->disableDefaultProgression)
-                 sIndividualProgression->UpdateProgressionState(player, PROGRESSION_AQ_WAR);
-            break;
-        case INTO_THE_BREACH:
-            if (!sIndividualProgression->disableDefaultProgression)
-                 sIndividualProgression->UpdateProgressionState(player, PROGRESSION_PRE_TBC);
-            break;
         case QUEST_MORROWGRAIN:
         case QUEST_TROLL_NECKLACE:
         case QUEST_DEADWOOD:
@@ -423,31 +406,6 @@ public:
 
         if (killed->GetCreatureTemplate()->rank > CREATURE_ELITE_NORMAL)
         {       
-            if (sIndividualProgression->disableDefaultProgression)
-            {
-                bool CustomCreatureKilled = false;
-                
-                if (group)
-                {
-                    for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
-                    {
-                        Player* member = itr->GetSource();
-                        if (!member || !sIndividualProgression->isNormalAccount(member))
-                            continue;
-
-                        if (sIndividualProgression->checkCustomKillProgression(killer, killed))
-                            CustomCreatureKilled = true;
-                    }
-                }
-                else // no group
-                {
-                    if (sIndividualProgression->checkCustomKillProgression(killer, killed)) 
-                        CustomCreatureKilled = true;
-                }
-
-                if (CustomCreatureKilled)
-                    return;
-            }
    
             if (entry == COLOSSUS_ZORA || entry == COLOSSUS_REGAL || entry == COLOSSUS_ASHI || entry == GENERAL_NOKHOR)
             {
@@ -505,25 +463,24 @@ public:
                 return;
             }
 
-            if (group)
+            if (entry == KELTHUZAD_40)
             {
-                for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+                if (group)
                 {
-                    Player* member = itr->GetSource();
-                    if (!member || !sIndividualProgression->isNormalAccount(member))
-                        continue;
-
-                    if (killer->IsAtLootRewardDistance(member))
+                    for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
                     {
-                        if (!sIndividualProgression->hasCustomProgressionValue(entry))
-                            sIndividualProgression->checkKillProgression(member, killed);
+                        Player* member = itr->GetSource();
+                        if (!member || !sIndividualProgression->isNormalAccount(member))
+                            continue;
+
+                        if (killer->IsAtLootRewardDistance(member))
+                            sIndividualProgression->UpdateProgressionAchievements(member, KEL_THUZAD_40_KILL);
                     }
                 }
-            }
-            else // no group
-            {
-                if (!sIndividualProgression->hasCustomProgressionValue(entry))
-                    sIndividualProgression->checkKillProgression(killer, killed);
+                else // no group
+                {
+                    sIndividualProgression->UpdateProgressionAchievements(killer, KEL_THUZAD_40_KILL);
+                }
             }
         }
     }
@@ -546,9 +503,6 @@ public:
     {
         if (!sIndividualProgression->enabled || !player || !player->IsInWorld())
             return;
-
-        if (sIndividualProgression->isNormalAccount(player))
-            sIndividualProgression->checkIPProgression(player);
 
         if (!sIndividualProgression->isBotAccount(player) || sIndividualProgression->BotAccountsEarnPvPTitles)
         {
@@ -702,27 +656,8 @@ public:
     }
 };
 
-class IndividualPlayerProgression_GroupScript : public GroupScript
-{
-public:
-    IndividualPlayerProgression_GroupScript() : GroupScript("IndividualPlayerProgression_GroupScript") { }
-
-    void OnAddMember(Group* group, ObjectGuid guid) override
-    {
-        if (!group || !guid)
-            return;
-
-        Player* added = ObjectAccessor::FindPlayer(guid);
-        if (!added)
-            return;
-
-        sIndividualProgression->SyncBotsProgressionToLeader(group);
-    }
-};
-
 void AddSC_mod_individual_progression_player()
 {
     new IndividualPlayerProgression();
-    new IndividualPlayerProgression_GroupScript();
     new IndividualPlayerProgression_AccountScript();
 }
